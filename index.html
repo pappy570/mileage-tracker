@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>走行記録</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="走行記録">
+  <meta name="theme-color" content="#1976D2">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+    :root {
+      --primary: #1976D2;
+      --primary-dark: #1565C0;
+      --bg: #F0F4F8;
+      --card: #FFFFFF;
+      --text: #212121;
+      --text-sub: #757575;
+      --border: #E0E0E0;
+      --ok: #388E3C;
+      --warn: #F57C00;
+      --priv-color: #7B1FA2;
+      --nav-h: 62px;
+      --sb: env(safe-area-inset-bottom, 0px);
+      --st: env(safe-area-inset-top, 0px);
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+      background: var(--bg); color: var(--text);
+      padding-bottom: calc(var(--nav-h) + var(--sb));
+      min-height: 100vh;
+    }
+
+    /* HEADER */
+    .header {
+      background: var(--primary); color: white;
+      padding: 13px 16px 11px;
+      padding-top: calc(13px + var(--st));
+      position: sticky; top: 0; z-index: 100;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .header-left h1 { font-size: 17px; font-weight: 700; }
+    .header-left .sub { font-size: 11px; opacity: .8; margin-top: 1px; }
+    .header-gear {
+      background: rgba(255,255,255,.18); border: none;
+      border-radius: 50%; width: 36px; height: 36px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; flex-shrink: 0;
+    }
+    .header-gear svg { width: 20px; height: 20px; fill: white; }
+
+    /* NAV */
+    .nav {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: white; border-top: 1px solid var(--border);
+      display: flex; height: calc(var(--nav-h) + var(--sb));
+      padding-bottom: var(--sb); z-index: 100;
+      box-shadow: 0 -2px 8px rgba(0,0,0,0.07);
+    }
+    .nav-btn {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 3px; border: none; background: none;
+      color: var(--text-sub); font-size: 10px; font-weight: 600; cursor: pointer;
+    }
+    .nav-btn.active { color: var(--primary); }
+    .nav-btn svg { width: 22px; height: 22px; }
+
+    /* PAGES */
+    .page { display: none; padding: 13px; max-width: 600px; margin: 0 auto; }
+    .page.active { display: block; }
+
+    /* CARD */
+    .card {
+      background: var(--card); border-radius: 14px;
+      padding: 15px; margin-bottom: 11px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+    .card-title {
+      font-size: 10px; font-weight: 700; color: var(--text-sub);
+      text-transform: uppercase; letter-spacing: .7px; margin-bottom: 13px;
+    }
+
+    /* FORM */
+    .form-group { margin-bottom: 13px; }
+    .form-group label { display: block; font-size: 12px; font-weight: 700; color: var(--text-sub); margin-bottom: 6px; }
+    .form-group input,
+    .form-group select {
+      width: 100%; padding: 12px 13px;
+      border: 1.5px solid var(--border); border-radius: 10px;
+      font-size: 16px; color: var(--text); background: white;
+      outline: none; -webkit-appearance: none; font-family: inherit;
+      transition: border-color .2s;
+    }
+    .form-group input:focus,
+    .form-group select:focus { border-color: var(--primary); }
+    .select-wrap { position: relative; }
+    .select-wrap::after {
+      content: '▼'; position: absolute; right: 14px; top: 50%;
+      transform: translateY(-50%); font-size: 11px;
+      color: var(--text-sub); pointer-events: none;
+    }
+    .select-wrap select { padding-right: 36px; cursor: pointer; }
+
+    /* ODO ROW */
+    .odo-row { display: flex; gap: 8px; align-items: flex-end; }
+    .odo-row .form-group { flex: 1; margin-bottom: 0; }
+    .odo-arrow { font-size: 18px; color: var(--text-sub); padding-bottom: 10px; flex-shrink: 0; }
+
+    /* DISTANCE */
+    .dist-display {
+      background: #E3F2FD; border: 1.5px solid #90CAF9;
+      border-radius: 10px; padding: 12px 13px;
+      font-size: 22px; font-weight: 800; color: var(--primary);
+      text-align: center; margin-top: 13px;
+    }
+    .dist-display small { font-size: 13px; font-weight: 500; margin-left: 3px; }
+    .dist-error { border-color: #EF9A9A; background: #FFEBEE; color: #C62828; font-size: 13px; font-weight: 500; }
+
+    /* BUTTONS */
+    .btn-primary {
+      width: 100%; padding: 15px;
+      background: var(--primary); color: white;
+      border: none; border-radius: 12px;
+      font-size: 16px; font-weight: 700; cursor: pointer; margin-top: 4px;
+    }
+    .btn-primary:active { background: var(--primary-dark); }
+    .btn-outline {
+      padding: 9px 16px; background: transparent;
+      color: var(--primary); border: 1.5px solid var(--primary);
+      border-radius: 9px; font-size: 13px; font-weight: 700; cursor: pointer;
+    }
+    .btn-danger-sm {
+      padding: 5px 12px; background: #FFEBEE;
+      color: #C62828; border: none; border-radius: 9px;
+      font-size: 12px; font-weight: 700; cursor: pointer;
+    }
+    .btn-danger {
+      width: 100%; padding: 13px; background: #FFEBEE;
+      color: #C62828; border: none; border-radius: 12px;
+      font-size: 15px; font-weight: 700; cursor: pointer; margin-top: 14px;
+    }
+    .export-btn {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 13px; width: 100%;
+      background: #E8F5E9; color: #2E7D32;
+      border: 1.5px solid #A5D6A7; border-radius: 12px;
+      font-size: 14px; font-weight: 700; cursor: pointer;
+    }
+    .export-btn svg { width: 17px; height: 17px; }
+
+    /* MONTH SELECTOR */
+    .month-sel {
+      display: flex; align-items: center; gap: 10px;
+      background: white; border-radius: 12px; padding: 9px 13px;
+      margin-bottom: 11px; box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+    .month-sel button { background: none; border: none; font-size: 22px; cursor: pointer; color: var(--primary); padding: 2px 8px; border-radius: 7px; line-height: 1; }
+    .month-sel button:active { background: #E3F2FD; }
+    .month-disp { flex: 1; text-align: center; font-size: 16px; font-weight: 700; }
+
+    /* CHIPS */
+    .chips {
+      display: flex; gap: 7px; margin-bottom: 11px;
+      overflow-x: auto; -webkit-overflow-scrolling: touch;
+      scrollbar-width: none; padding-bottom: 2px;
+    }
+    .chips::-webkit-scrollbar { display: none; }
+    .chip {
+      padding: 6px 14px; border-radius: 20px;
+      border: 1.5px solid var(--border); background: white;
+      font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap;
+    }
+    .chip.active { background: var(--primary); border-color: var(--primary); color: white; }
+
+    /* RECORD LIST */
+    .rec-item {
+      display: flex; align-items: center;
+      padding: 11px 0; border-bottom: 1px solid var(--border);
+      cursor: pointer; gap: 11px;
+    }
+    .rec-item:last-child { border-bottom: none; }
+    .rec-info { flex: 1; min-width: 0; }
+    .rec-staff { font-size: 13px; font-weight: 700; color: var(--primary); }
+    .rec-date  { font-size: 11px; color: var(--text-sub); }
+    .rec-memo  { font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .rec-km { font-size: 17px; font-weight: 800; flex-shrink: 0; color: var(--primary); }
+    .rec-km small { font-size: 11px; font-weight: 500; color: var(--text-sub); }
+
+    /* STATS GRID */
+    .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 11px; }
+    .stat-card { background: var(--card); border-radius: 14px; padding: 15px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); text-align: center; }
+    .stat-card.full { grid-column: 1/-1; }
+    .stat-val { font-size: 28px; font-weight: 800; line-height: 1.1; }
+    .stat-lbl { font-size: 11px; color: var(--text-sub); margin-top: 4px; }
+
+    /* USAGE RATE CARD */
+    .rate-card {
+      background: var(--card); border-radius: 14px; padding: 16px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08); margin-bottom: 11px;
+    }
+    .rate-row { display: flex; align-items: center; margin-bottom: 10px; gap: 12px; }
+    .rate-row:last-child { margin-bottom: 0; }
+    .rate-label { font-size: 13px; font-weight: 700; width: 110px; flex-shrink: 0; }
+    .rate-bar-wrap { flex: 1; }
+    .rate-bar { height: 16px; background: #E0E0E0; border-radius: 8px; overflow: hidden; }
+    .rate-fill { height: 100%; border-radius: 8px; transition: width .4s ease; }
+    .rate-pct { font-size: 18px; font-weight: 800; width: 52px; text-align: right; flex-shrink: 0; }
+
+    /* ODO MONTH INPUT */
+    .odo-month-row { display: flex; gap: 10px; }
+    .odo-month-row .form-group { flex: 1; margin-bottom: 0; }
+    .odo-result {
+      background: #F3E5F5; border: 1.5px solid #CE93D8;
+      border-radius: 10px; padding: 11px 13px; margin-top: 12px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .odo-result-label { font-size: 12px; font-weight: 700; color: #6A1B9A; }
+    .odo-result-val { font-size: 20px; font-weight: 800; color: #6A1B9A; }
+    .odo-result-val small { font-size: 12px; font-weight: 500; }
+
+    /* LIST TABLE */
+    .list-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .list-table th {
+      background: #EEF3FA; padding: 8px 6px; text-align: left;
+      font-size: 11px; font-weight: 700; color: var(--text-sub);
+      border-bottom: 2px solid var(--border);
+    }
+    .list-table td { padding: 9px 6px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    .list-table tr:last-child td { border-bottom: none; }
+    .list-table tr { cursor: pointer; }
+    .list-table tr:active td { background: #F5F5F5; }
+
+    /* MODAL */
+    .overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,.45);
+      z-index: 200; display: none; align-items: flex-end;
+    }
+    .overlay.active { display: flex; }
+    .overlay.center { align-items: center; justify-content: center; }
+    .modal {
+      background: white; border-radius: 20px 20px 0 0;
+      padding: 20px; padding-bottom: calc(20px + var(--sb));
+      width: 100%; max-height: 90vh; overflow-y: auto;
+    }
+    .modal.center-modal {
+      border-radius: 18px; max-width: 480px;
+      width: calc(100% - 32px); padding-bottom: 20px; max-height: 85vh;
+    }
+    .modal-hd { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+    .modal-title { font-size: 17px; font-weight: 800; }
+    .modal-close {
+      background: #F5F5F5; border: none; width: 28px; height: 28px;
+      border-radius: 50%; font-size: 17px; cursor: pointer;
+      color: var(--text-sub); display: flex; align-items: center; justify-content: center;
+    }
+    .detail-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
+    .detail-row:last-of-type { border-bottom: none; }
+    .dl { color: var(--text-sub); }
+    .dv { font-weight: 700; }
+
+    /* SETTINGS */
+    .set-section { margin-bottom: 18px; }
+    .set-section-title { font-size: 12px; font-weight: 700; color: var(--text-sub); margin-bottom: 9px; text-transform: uppercase; letter-spacing: .5px; }
+    .staff-list { margin-bottom: 9px; }
+    .staff-item { display: flex; align-items: center; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid var(--border); font-size: 14px; font-weight: 600; }
+    .staff-item:last-child { border-bottom: none; }
+    .staff-add-row { display: flex; gap: 8px; }
+    .staff-add-row input { flex: 1; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 9px; font-size: 15px; outline: none; font-family: inherit; }
+    .staff-add-row input:focus { border-color: var(--primary); }
+    .gas-url-wrap input { width: 100%; padding: 11px 12px; border: 1.5px solid var(--border); border-radius: 9px; font-size: 13px; outline: none; font-family: monospace; }
+    .gas-url-wrap input:focus { border-color: var(--primary); }
+    .gas-actions { display: flex; gap: 8px; margin-top: 9px; }
+    .gas-actions button { flex: 1; padding: 10px; border-radius: 9px; border: 1.5px solid var(--primary); background: transparent; color: var(--primary); font-size: 13px; font-weight: 700; cursor: pointer; }
+    .sync-all-btn { width: 100%; padding: 13px; margin-top: 4px; background: #E3F2FD; color: var(--primary); border: 1.5px solid #90CAF9; border-radius: 12px; font-size: 14px; font-weight: 700; cursor: pointer; }
+
+    /* EMPTY */
+    .empty { text-align: center; padding: 44px 24px; color: var(--text-sub); }
+    .empty svg { width: 52px; height: 52px; margin-bottom: 10px; opacity: .25; }
+
+    /* TOAST */
+    .toast {
+      position: fixed;
+      bottom: calc(var(--nav-h) + var(--sb) + 12px); left: 50%;
+      transform: translateX(-50%) translateY(14px);
+      background: #323232; color: white; padding: 10px 18px;
+      border-radius: 10px; font-size: 13px; font-weight: 600;
+      opacity: 0; transition: all .25s; z-index: 400;
+      white-space: nowrap; box-shadow: 0 4px 12px rgba(0,0,0,.3);
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* SPIN */
+    .spin {
+      display: inline-block; width: 16px; height: 16px;
+      border: 2px solid #90CAF9; border-top-color: var(--primary);
+      border-radius: 50%; animation: spin .7s linear infinite; vertical-align: middle; margin-right: 5px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-left">
+      <h1 id="pageTitle">走行記録を入力</h1>
+      <div class="sub" id="pageSub">業務の移動を記録してください</div>
+    </div>
+    <button class="header-gear" onclick="openSettings()">
+      <svg viewBox="0 0 24 24"><path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.74,8.87C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.07,0.94l-2.03,1.58c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/></svg>
+    </button>
+  </div>
+
+  <!-- PAGE: 入力 -->
+  <div class="page active" id="page-input">
+    <div class="card">
+      <div class="card-title">スタッフ・基本情報</div>
+
+      <div class="form-group">
+        <label>スタッフ名</label>
+        <div class="select-wrap">
+          <select id="inputStaff" onchange="saveLastStaff()">
+            <option value="">-- スタッフを選択 --</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>日付</label>
+        <input type="date" id="inputDate">
+      </div>
+
+      <div class="form-group" style="margin-bottom:0;">
+        <label>訪問先・メモ（任意）</label>
+        <input type="text" id="inputMemo" placeholder="例：山田様宅、〇〇病院">
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">ODOメーター値（業務）</div>
+      <div class="odo-row">
+        <div class="form-group">
+          <label>出発時 (km)</label>
+          <input type="number" id="inputDep" placeholder="例：12345" inputmode="numeric" min="0">
+        </div>
+        <div class="odo-arrow">→</div>
+        <div class="form-group">
+          <label>到着時 (km)</label>
+          <input type="number" id="inputArr" placeholder="例：12367" inputmode="numeric" min="0">
+        </div>
+      </div>
+      <div id="distDisp" class="dist-display">ー<small>km</small></div>
+    </div>
+
+    <button class="btn-primary" onclick="saveRecord()">💼 業務記録を保存</button>
+  </div>
+
+  <!-- PAGE: 履歴 -->
+  <div class="page" id="page-history">
+    <div class="month-sel">
+      <button onclick="changeMonth('h',-1)">‹</button>
+      <div class="month-disp" id="hMonthDisp"></div>
+      <button onclick="changeMonth('h',1)">›</button>
+    </div>
+    <div class="chips" id="hStaffChips"></div>
+    <div id="historyList"></div>
+  </div>
+
+  <!-- PAGE: 集計 -->
+  <div class="page" id="page-summary">
+    <div class="month-sel">
+      <button onclick="changeMonth('s',-1)">‹</button>
+      <div class="month-disp" id="sMonthDisp"></div>
+      <button onclick="changeMonth('s',1)">›</button>
+    </div>
+    <div class="chips" id="sStaffChips"></div>
+
+    <!-- 月初・月末ODO入力 -->
+    <div class="card">
+      <div class="card-title">月初・月末ODOメーター値を入力</div>
+      <div class="odo-month-row">
+        <div class="form-group">
+          <label>月初ODO (km)</label>
+          <input type="number" id="odoStart" placeholder="例：12000" inputmode="numeric" min="0" oninput="updateOdoCalc()">
+        </div>
+        <div class="odo-arrow" style="padding-bottom:10px;">→</div>
+        <div class="form-group">
+          <label>月末ODO (km)</label>
+          <input type="number" id="odoEnd" placeholder="例：13500" inputmode="numeric" min="0" oninput="updateOdoCalc()">
+        </div>
+      </div>
+      <div id="totalDistResult" class="odo-result" style="display:none;">
+        <span class="odo-result-label">総走行距離</span>
+        <span class="odo-result-val" id="totalDistVal">ー<small>km</small></span>
+      </div>
+    </div>
+
+    <!-- 走行距離まとめ -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-val" id="sBiz" style="color:var(--primary);">0</div>
+        <div class="stat-lbl">💼 業務 (km)</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" id="sPriv" style="color:var(--priv-color);">0</div>
+        <div class="stat-lbl">🚗 プライベート (km)</div>
+      </div>
+      <div class="stat-card full">
+        <div class="stat-val" id="sTot" style="color:var(--text-sub);">0</div>
+        <div class="stat-lbl">総走行距離 (km)</div>
+      </div>
+    </div>
+
+    <!-- 使用率 -->
+    <div class="rate-card">
+      <div class="card-title" style="margin-bottom:14px;">使用率</div>
+
+      <div class="rate-row">
+        <div class="rate-label" style="color:var(--primary);">💼 業務</div>
+        <div class="rate-bar-wrap">
+          <div class="rate-bar">
+            <div class="rate-fill" id="bizFill" style="width:0%;background:var(--primary);"></div>
+          </div>
+        </div>
+        <div class="rate-pct" id="bizPct" style="color:var(--primary);">0%</div>
+      </div>
+
+      <div class="rate-row">
+        <div class="rate-label" style="color:var(--priv-color);">🚗 プライベート</div>
+        <div class="rate-bar-wrap">
+          <div class="rate-bar">
+            <div class="rate-fill" id="privFill" style="width:0%;background:var(--priv-color);"></div>
+          </div>
+        </div>
+        <div class="rate-pct" id="privPct" style="color:var(--priv-color);">0%</div>
+      </div>
+
+      <div style="margin-top:12px; padding-top:12px; border-top:1px solid var(--border); font-size:12px; color:var(--text-sub); text-align:center;">
+        税務上の判定：業務使用が<strong style="color:var(--ok);">50%超</strong>で業務用車両として認められます
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">記録件数</div>
+      <div style="display:flex;text-align:center;">
+        <div style="flex:1;"><div style="font-size:24px;font-weight:800;color:var(--primary);" id="sBizCnt">0</div><div style="font-size:11px;color:var(--text-sub);">業務件数</div></div>
+        <div style="flex:1;"><div style="font-size:24px;font-weight:800;" id="sTotCnt">0</div><div style="font-size:11px;color:var(--text-sub);">合計件数</div></div>
+      </div>
+    </div>
+
+    <button class="export-btn" onclick="exportCSV('s')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+      月次レポートCSVをダウンロード
+    </button>
+  </div>
+
+  <!-- PAGE: 一覧（全スタッフ） -->
+  <div class="page" id="page-list">
+    <div class="month-sel">
+      <button onclick="changeMonth('l',-1)">‹</button>
+      <div class="month-disp" id="lMonthDisp"></div>
+      <button onclick="changeMonth('l',1)">›</button>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+      <div id="listStatus" style="font-size:12px;color:var(--text-sub);"></div>
+      <button class="btn-outline" onclick="refreshList()" style="font-size:12px;padding:7px 14px;">🔄 更新</button>
+    </div>
+    <div class="card" style="padding:0;overflow:auto;">
+      <table class="list-table">
+        <thead>
+          <tr><th>日付</th><th>名前</th><th style="text-align:right;">距離</th><th>メモ</th></tr>
+        </thead>
+        <tbody id="listBody"></tbody>
+      </table>
+    </div>
+    <button class="export-btn" style="margin-top:4px;" onclick="exportCSV('l')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+      全スタッフCSVダウンロード
+    </button>
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <nav class="nav">
+    <button class="nav-btn active" onclick="showPage('input',this)">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg>
+      入力
+    </button>
+    <button class="nav-btn" onclick="showPage('history',this)">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.95-2.05L6.7 18.3C8.32 19.98 10.54 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.25 2.53.77-1.28L10 12.5V8H12z"/></svg>
+      履歴
+    </button>
+    <button class="nav-btn" onclick="showPage('summary',this)">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+      集計
+    </button>
+    <button class="nav-btn" onclick="showPage('list',this)">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/></svg>
+      一覧
+    </button>
+  </nav>
+
+  <!-- DETAIL MODAL -->
+  <div class="overlay" id="detailOverlay" onclick="onOvClick(event,'detailOverlay')">
+    <div class="modal">
+      <div class="modal-hd">
+        <div class="modal-title" id="detailTitle"></div>
+        <button class="modal-close" onclick="closeOverlay('detailOverlay')">×</button>
+      </div>
+      <div id="detailBody"></div>
+    </div>
+  </div>
+
+  <!-- SETTINGS MODAL -->
+  <div class="overlay center" id="settingsOverlay" onclick="onOvClick(event,'settingsOverlay')">
+    <div class="modal center-modal">
+      <div class="modal-hd">
+        <div class="modal-title">⚙ 設定</div>
+        <button class="modal-close" onclick="closeOverlay('settingsOverlay')">×</button>
+      </div>
+
+      <div class="set-section">
+        <div class="set-section-title">スタッフ管理</div>
+        <div class="staff-list" id="staffList"></div>
+        <div class="staff-add-row">
+          <input type="text" id="newStaffInput" placeholder="名前を入力" maxlength="20">
+          <button class="btn-outline" onclick="addStaff()">追加</button>
+        </div>
+      </div>
+
+      <div class="set-section">
+        <div class="set-section-title">Google スプレッドシート連携</div>
+        <div class="gas-url-wrap">
+          <input type="url" id="gasUrlInput" placeholder="GAS Web App URL を貼り付け">
+        </div>
+        <div class="gas-actions">
+          <button onclick="saveGasUrl()">💾 保存</button>
+          <button onclick="testGas()">🔗 接続テスト</button>
+        </div>
+      </div>
+
+      <div class="set-section" style="margin-bottom:0;">
+        <div class="set-section-title">データ同期</div>
+        <button class="sync-all-btn" onclick="syncAll()">📤 未同期データを全件送信</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const KEY_RECORDS = 'mileage_v1';
+    const KEY_STAFF   = 'mileage_staff_v1';
+    const KEY_GAS     = 'mileage_gas_v1';
+    const KEY_LSTF    = 'mileage_laststaff_v1';
+    const KEY_ODO     = 'mileage_odo_v1'; // { "2026-03": { start: 12000, end: 13500 } }
+
+    function load(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } }
+    function save(k, v) { localStorage.setItem(k, JSON.stringify(v)); }
+    function pad(n) { return String(n).padStart(2,'0'); }
+    function toDateVal(d) { return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
+    function ym(date) { return `${date.getFullYear()}-${pad(date.getMonth()+1)}`; }
+    function ymLabel(date) { return `${date.getFullYear()}年${date.getMonth()+1}月`; }
+    function dispDate(s) {
+      const d = new Date(s+'T00:00:00');
+      return `${d.getMonth()+1}/${d.getDate()}（${'日月火水木金土'[d.getDay()]}）`;
+    }
+    function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+    let months = { h: new Date(), s: new Date(), l: new Date() };
+    let hStaffFilter = 'all';
+    let sStaffFilter = 'all';
+    let listData = [];
+
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('inputDate').value = toDateVal(new Date());
+      document.getElementById('inputDep').addEventListener('input', updateDist);
+      document.getElementById('inputArr').addEventListener('input', updateDist);
+      refreshStaffSelect();
+      renderHistory(); renderSummary(); renderList();
+    });
+
+    // ── STAFF ──
+    function getStaff() { return load(KEY_STAFF, []); }
+    function refreshStaffSelect() {
+      const staff = getStaff();
+      const last  = load(KEY_LSTF, '');
+      document.getElementById('inputStaff').innerHTML =
+        '<option value="">-- スタッフを選択 --</option>' +
+        staff.map(s => `<option value="${esc(s)}"${s===last?' selected':''}>${esc(s)}</option>`).join('');
+    }
+    function saveLastStaff() { save(KEY_LSTF, document.getElementById('inputStaff').value); }
+    function renderStaffList() {
+      const staff = getStaff();
+      document.getElementById('staffList').innerHTML = staff.length === 0
+        ? '<div style="color:var(--text-sub);font-size:13px;padding:6px 0;">スタッフを追加してください</div>'
+        : staff.map((s,i) => `<div class="staff-item"><span>${esc(s)}</span><button class="btn-danger-sm" onclick="removeStaff(${i})">削除</button></div>`).join('');
+    }
+    function addStaff() {
+      const inp  = document.getElementById('newStaffInput');
+      const name = inp.value.trim();
+      if (!name) return;
+      const staff = getStaff();
+      if (staff.includes(name)) { showToast('すでに登録されています'); return; }
+      staff.push(name); save(KEY_STAFF, staff);
+      inp.value = '';
+      renderStaffList(); refreshStaffSelect();
+      showToast(`${name} を追加しました`);
+    }
+    function removeStaff(i) {
+      const staff = getStaff();
+      if (!confirm(`「${staff[i]}」を削除しますか？`)) return;
+      staff.splice(i,1); save(KEY_STAFF, staff);
+      renderStaffList(); refreshStaffSelect();
+    }
+
+    // ── DISTANCE ──
+    function updateDist() {
+      const dep = parseFloat(document.getElementById('inputDep').value);
+      const arr = parseFloat(document.getElementById('inputArr').value);
+      const el  = document.getElementById('distDisp');
+      el.className = 'dist-display';
+      if (!isNaN(dep) && !isNaN(arr)) {
+        if (arr > dep) {
+          el.innerHTML = `<span style="font-size:28px;">${(arr-dep).toFixed(1)}</span><small>km</small>`;
+        } else {
+          el.classList.add('dist-error');
+          el.innerHTML = '到着値は出発値より大きい数を入力してください';
+        }
+      } else {
+        el.innerHTML = 'ー<small>km</small>';
+      }
+    }
+
+    // ── SAVE RECORD ──
+    function saveRecord() {
+      const staff = document.getElementById('inputStaff').value;
+      const date  = document.getElementById('inputDate').value;
+      const memo  = document.getElementById('inputMemo').value.trim();
+      const dep   = parseFloat(document.getElementById('inputDep').value);
+      const arr   = parseFloat(document.getElementById('inputArr').value);
+
+      if (!staff) { showToast('スタッフを選択してください'); return; }
+      if (!date)  { showToast('日付を入力してください'); return; }
+      if (isNaN(dep) || isNaN(arr)) { showToast('ODO値を入力してください'); return; }
+      if (arr <= dep) { showToast('到着値は出発値より大きい数を入力してください'); return; }
+
+      const distance = parseFloat((arr-dep).toFixed(1));
+      const rec = {
+        id: Date.now().toString(), staff, date,
+        memo: memo || '業務',
+        departureOdo: dep, arrivalOdo: arr, distance,
+        synced: false, createdAt: new Date().toISOString()
+      };
+
+      const records = load(KEY_RECORDS, []);
+      records.push(rec); save(KEY_RECORDS, records);
+
+      document.getElementById('inputMemo').value = '';
+      document.getElementById('inputDep').value  = '';
+      document.getElementById('inputArr').value  = '';
+      document.getElementById('distDisp').className = 'dist-display';
+      document.getElementById('distDisp').innerHTML = 'ー<small>km</small>';
+
+      showToast(`✓ ${staff}：${distance}km を記録しました`);
+      renderHistory(); renderSummary();
+      postToGas(rec);
+    }
+
+    // ── NAVIGATION ──
+    const pageInfo = {
+      input:   ['走行記録を入力',   '業務の移動を記録してください'],
+      history: ['走行履歴',         '過去の業務記録を確認できます'],
+      summary: ['月次集計',         '走行距離・使用率を確認できます'],
+      list:    ['全スタッフ 一覧',  'スプレッドシートから取得したデータ']
+    };
+    function showPage(name, btn) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.getElementById(`page-${name}`).classList.add('active');
+      document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const [t,s] = pageInfo[name];
+      document.getElementById('pageTitle').textContent = t;
+      document.getElementById('pageSub').textContent   = s;
+      if (name === 'history') renderHistory();
+      if (name === 'summary') renderSummary();
+      if (name === 'list')    renderList();
+    }
+
+    function changeMonth(p, d) {
+      const cur = months[p];
+      months[p] = new Date(cur.getFullYear(), cur.getMonth()+d, 1);
+      if (p==='h') renderHistory();
+      if (p==='s') { renderSummary(); loadOdoInputs(); }
+      if (p==='l') renderList();
+    }
+
+    // ── STAFF CHIPS ──
+    function buildStaffChips(containerId, current, onSelectFn) {
+      const staff = getStaff();
+      document.getElementById(containerId).innerHTML = [
+        `<button class="chip${current==='all'?' active':''}" onclick="${onSelectFn}('all',this)">全員</button>`,
+        ...staff.map(s => `<button class="chip${current===s?' active':''}" onclick="${onSelectFn}('${esc(s)}',this)">${esc(s)}</button>`)
+      ].join('');
+    }
+
+    // ── HISTORY ──
+    function setHStaff(val) { hStaffFilter = val; renderHistory(); }
+    function renderHistory() {
+      document.getElementById('hMonthDisp').textContent = ymLabel(months.h);
+      buildStaffChips('hStaffChips', hStaffFilter, 'setHStaff');
+      const key  = ym(months.h);
+      const recs = load(KEY_RECORDS,[])
+        .filter(r => r.date.startsWith(key))
+        .filter(r => hStaffFilter==='all' || r.staff===hStaffFilter)
+        .sort((a,b) => b.date.localeCompare(a.date) || (a.staff||'').localeCompare(b.staff||''));
+
+      const el = document.getElementById('historyList');
+      if (!recs.length) {
+        el.innerHTML = `<div class="empty"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.95-2.05L6.7 18.3C8.32 19.98 10.54 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9z"/></svg><div style="font-size:14px;font-weight:600;">この月の記録はありません</div></div>`;
+        return;
+      }
+      el.innerHTML = '<div class="card">' + recs.map(r => `
+        <div class="rec-item" onclick="showDetail('${r.id}')">
+          <div class="rec-info">
+            <div class="rec-staff">${esc(r.staff)}</div>
+            <div class="rec-date">${dispDate(r.date)}</div>
+            <div class="rec-memo">${esc(r.memo)}</div>
+          </div>
+          <div class="rec-km">${r.distance}<small>km</small></div>
+        </div>`).join('') + '</div>';
+    }
+
+    // ── SUMMARY ──
+    function setSStaff(val) { sStaffFilter = val; renderSummary(); }
+
+    function loadOdoInputs() {
+      const key  = ym(months.s);
+      const odos = load(KEY_ODO, {});
+      const d    = odos[key] || {};
+      document.getElementById('odoStart').value = d.start || '';
+      document.getElementById('odoEnd').value   = d.end   || '';
+      updateOdoCalc();
+    }
+
+    function updateOdoCalc() {
+      const start = parseFloat(document.getElementById('odoStart').value);
+      const end   = parseFloat(document.getElementById('odoEnd').value);
+      const el    = document.getElementById('totalDistResult');
+      if (!isNaN(start) && !isNaN(end) && end > start) {
+        const total = (end - start).toFixed(1);
+        document.getElementById('totalDistVal').innerHTML = `${total}<small>km</small>`;
+        el.style.display = 'flex';
+        // save
+        const key  = ym(months.s);
+        const odos = load(KEY_ODO, {});
+        odos[key]  = { start, end };
+        save(KEY_ODO, odos);
+      } else {
+        el.style.display = 'none';
+      }
+      renderSummary();
+    }
+
+    function renderSummary() {
+      document.getElementById('sMonthDisp').textContent = ymLabel(months.s);
+      buildStaffChips('sStaffChips', sStaffFilter, 'setSStaff');
+
+      const key    = ym(months.s);
+      const odos   = load(KEY_ODO, {});
+      const odoVal = odos[key] || {};
+      const odoStart = parseFloat(document.getElementById('odoStart')?.value || odoVal.start || '');
+      const odoEnd   = parseFloat(document.getElementById('odoEnd')?.value   || odoVal.end   || '');
+
+      const recs   = load(KEY_RECORDS,[])
+        .filter(r => r.date.startsWith(key))
+        .filter(r => sStaffFilter==='all' || r.staff===sStaffFilter);
+      const bizKm  = parseFloat(recs.reduce((s,r) => s+r.distance, 0).toFixed(1));
+      const totKm  = (!isNaN(odoStart) && !isNaN(odoEnd) && odoEnd > odoStart)
+                     ? parseFloat((odoEnd - odoStart).toFixed(1)) : 0;
+      const privKm = totKm > 0 ? parseFloat(Math.max(0, totKm - bizKm).toFixed(1)) : 0;
+      const bizPct  = totKm > 0 ? Math.round(bizKm  / totKm * 100) : 0;
+      const privPct = totKm > 0 ? Math.round(privKm / totKm * 100) : 0;
+
+      document.getElementById('sBiz').textContent   = bizKm;
+      document.getElementById('sPriv').textContent  = privKm > 0 ? privKm : (totKm > 0 ? 0 : '─');
+      document.getElementById('sTot').textContent   = totKm > 0 ? totKm : '─';
+      document.getElementById('sBizCnt').textContent = recs.length;
+      document.getElementById('sTotCnt').textContent = recs.length;
+
+      document.getElementById('bizFill').style.width  = `${bizPct}%`;
+      document.getElementById('privFill').style.width = `${privPct}%`;
+      document.getElementById('bizPct').textContent   = totKm > 0 ? `${bizPct}%`  : '─';
+      document.getElementById('privPct').textContent  = totKm > 0 ? `${privPct}%` : '─';
+
+      // 業務使用率の色分け（50%以上:緑 / 未満:オレンジ）
+      const okColor = bizPct >= 50 ? 'var(--ok)' : 'var(--warn)';
+      document.getElementById('bizFill').style.background = okColor;
+      document.getElementById('bizPct').style.color       = okColor;
+    }
+
+    // 集計ページ表示時にODO値を読み込む
+    const _origShowPage = showPage;
+
+    // ── LIST ──
+    function renderList() {
+      document.getElementById('lMonthDisp').textContent = ymLabel(months.l);
+      if (load(KEY_GAS,'')) fetchFromGas();
+      else {
+        const key = ym(months.l);
+        listData = load(KEY_RECORDS,[]).filter(r => r.date.startsWith(key));
+        document.getElementById('listStatus').textContent = 'GAS未設定：端末内データを表示中';
+        renderListTable();
+      }
+    }
+    function refreshList() { renderList(); }
+    async function fetchFromGas() {
+      const url = load(KEY_GAS,'');
+      if (!url) return;
+      document.getElementById('listStatus').innerHTML = '<span class="spin"></span>取得中…';
+      try {
+        const res  = await fetch(`${url}?action=get&ym=${ym(months.l)}`);
+        const data = await res.json();
+        if (data.ok) { listData = data.records; document.getElementById('listStatus').textContent = `${data.records.length}件 取得済み`; renderListTable(); }
+        else throw new Error(data.error);
+      } catch(e) {
+        document.getElementById('listStatus').textContent = '取得失敗：' + e.message;
+        listData = load(KEY_RECORDS,[]).filter(r => r.date.startsWith(ym(months.l)));
+        renderListTable();
+      }
+    }
+    function renderListTable() {
+      const sorted = [...listData].sort((a,b) => a.date.localeCompare(b.date)||(a.staff||'').localeCompare(b.staff||''));
+      const tbody  = document.getElementById('listBody');
+      if (!sorted.length) {
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:32px;color:var(--text-sub);">この月の記録はありません</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = sorted.map(r => `
+        <tr onclick="showDetail('${r.id}','list')">
+          <td style="white-space:nowrap;">${dispDate(r.date)}</td>
+          <td style="font-weight:700;white-space:nowrap;">${esc(r.staff||'')}</td>
+          <td style="text-align:right;font-weight:800;color:var(--primary);">${r.distance}<small style="font-size:10px;color:var(--text-sub);">km</small></td>
+          <td style="color:var(--text-sub);max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(r.memo||'')}</td>
+        </tr>`).join('');
+    }
+
+    // ── DETAIL ──
+    function showDetail(id, source) {
+      const recs = source==='list' ? listData : load(KEY_RECORDS,[]);
+      const r    = recs.find(r => r.id===id);
+      if (!r) return;
+      document.getElementById('detailTitle').textContent = r.memo || r.staff;
+      document.getElementById('detailBody').innerHTML = `
+        <div class="detail-row"><span class="dl">スタッフ</span><span class="dv">${esc(r.staff||'')}</span></div>
+        <div class="detail-row"><span class="dl">日付</span><span class="dv">${dispDate(r.date)}</span></div>
+        <div class="detail-row"><span class="dl">訪問先・メモ</span><span class="dv">${esc(r.memo||'')}</span></div>
+        <div class="detail-row"><span class="dl">出発ODO</span><span class="dv">${(r.departureOdo||0).toLocaleString()} km</span></div>
+        <div class="detail-row"><span class="dl">到着ODO</span><span class="dv">${(r.arrivalOdo||0).toLocaleString()} km</span></div>
+        <div class="detail-row"><span class="dl">走行距離</span><span class="dv" style="font-size:20px;color:var(--primary);">${r.distance} km</span></div>
+        ${source!=='list' ? `<button class="btn-danger" onclick="deleteRecord('${r.id}')">この記録を削除する</button>` : ''}
+      `;
+      document.getElementById('detailOverlay').classList.add('active');
+    }
+    function deleteRecord(id) {
+      if (!confirm('この記録を削除しますか？')) return;
+      save(KEY_RECORDS, load(KEY_RECORDS,[]).filter(r=>r.id!==id));
+      closeOverlay('detailOverlay');
+      showToast('記録を削除しました');
+      renderHistory(); renderSummary(); renderList();
+    }
+
+    // ── CSV ──
+    function exportCSV(page) {
+      const key  = ym(months[page==='l'?'l':'s']);
+      const data = page==='l'
+        ? [...listData].sort((a,b)=>a.date.localeCompare(b.date)||(a.staff||'').localeCompare(b.staff||''))
+        : load(KEY_RECORDS,[]).filter(r=>r.date.startsWith(key)&&(sStaffFilter==='all'||r.staff===sStaffFilter)).sort((a,b)=>a.date.localeCompare(b.date));
+
+      if (!data.length) { showToast('この月の記録がありません'); return; }
+
+      const odos   = load(KEY_ODO,{});
+      const odoVal = odos[key]||{};
+      const totKm  = (odoVal.start&&odoVal.end) ? (odoVal.end-odoVal.start).toFixed(1) : '';
+      const bizKm  = data.reduce((s,r)=>s+r.distance,0).toFixed(1);
+      const privKm = totKm ? Math.max(0,totKm-bizKm).toFixed(1) : '';
+      const bizPct  = totKm ? Math.round(bizKm/totKm*100) : '';
+      const privPct = totKm ? Math.round(privKm/totKm*100) : '';
+
+      const header = '日付,スタッフ名,訪問先・メモ,出発ODO(km),到着ODO(km),走行距離(km)';
+      const rows   = data.map(r=>[
+        r.date, `"${(r.staff||'').replace(/"/g,'""')}"`,
+        `"${(r.memo||'').replace(/"/g,'""')}"`,
+        r.departureOdo||'', r.arrivalOdo||'', r.distance
+      ].join(','));
+      const footer = [
+        '',
+        `集計,業務走行:${bizKm}km,プライベート:${privKm||'─'}km,総走行:${totKm||'─'}km,業務使用率:${bizPct!==''?bizPct+'%':'─'},プライベート使用率:${privPct!==''?privPct+'%':'─'}`
+      ];
+
+      const csv = '\uFEFF'+[header,...rows,...footer].join('\n');
+      const a = Object.assign(document.createElement('a'),{
+        href: URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'})),
+        download: `走行記録_${key}.csv`
+      });
+      a.click(); URL.revokeObjectURL(a.href);
+      showToast('CSVをダウンロードしました');
+    }
+
+    // ── GAS ──
+    async function postToGas(rec) {
+      const url = load(KEY_GAS,'');
+      if (!url) return;
+      try {
+        await fetch(url, { method:'POST', body: JSON.stringify(rec) });
+        const recs = load(KEY_RECORDS,[]);
+        const idx  = recs.findIndex(r=>r.id===rec.id);
+        if (idx>=0) { recs[idx].synced=true; save(KEY_RECORDS,recs); }
+      } catch(e) { console.warn('GAS sync failed:',e); }
+    }
+    async function syncAll() {
+      const url  = load(KEY_GAS,'');
+      if (!url) { showToast('GAS URLが設定されていません'); return; }
+      const recs = load(KEY_RECORDS,[]).filter(r=>!r.synced);
+      if (!recs.length) { showToast('未同期のデータはありません'); return; }
+      showToast(`📤 ${recs.length}件を送信中…`);
+      let ok=0;
+      for (const rec of recs) { try { await fetch(url,{method:'POST',body:JSON.stringify(rec)}); ok++; } catch {} }
+      const all = load(KEY_RECORDS,[]);
+      const ids = new Set(recs.map(r=>r.id));
+      all.forEach(r=>{ if(ids.has(r.id)) r.synced=true; });
+      save(KEY_RECORDS,all);
+      showToast(`✓ ${ok}/${recs.length}件 送信完了`);
+    }
+    async function testGas() {
+      const url = document.getElementById('gasUrlInput').value.trim();
+      if (!url) { showToast('URLを入力してください'); return; }
+      showToast('接続確認中…');
+      try {
+        const res  = await fetch(`${url}?action=test`);
+        const data = await res.json();
+        if (data.ok) showToast('✓ 接続成功！スプレッドシートに接続できました');
+        else throw new Error(data.error);
+      } catch(e) { showToast('接続失敗：'+e.message); }
+    }
+    function saveGasUrl() {
+      const url = document.getElementById('gasUrlInput').value.trim();
+      save(KEY_GAS,url);
+      showToast(url ? '✓ GAS URLを保存しました' : 'URLをクリアしました');
+    }
+
+    // ── SETTINGS ──
+    function openSettings() {
+      renderStaffList();
+      document.getElementById('gasUrlInput').value = load(KEY_GAS,'');
+      document.getElementById('settingsOverlay').classList.add('active');
+    }
+
+    // ── MODAL ──
+    function onOvClick(e,id) { if(e.target===document.getElementById(id)) closeOverlay(id); }
+    function closeOverlay(id) { document.getElementById(id).classList.remove('active'); }
+
+    // ── TOAST ──
+    let toastTimer;
+    function showToast(msg) {
+      const el = document.getElementById('toast');
+      el.textContent=msg; el.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer=setTimeout(()=>el.classList.remove('show'),2800);
+    }
+
+    // ── ODO LOAD on summary page init ──
+    // Patch showPage to load ODO inputs when navigating to summary
+    const origShowPage = window.showPage;
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        setTimeout(() => {
+          if (document.getElementById('page-summary').classList.contains('active')) {
+            loadOdoInputs();
+          }
+        }, 0);
+      });
+    });
+
+    // ── SERVICE WORKER ──
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', ()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+    }
+  </script>
+</body>
+</html>

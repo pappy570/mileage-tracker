@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">
+  <!-- Background -->
+  <rect width="192" height="192" rx="40" fill="#1976D2"/>
+  <!-- Car body -->
+  <rect x="28" y="100" width="136" height="40" rx="8" fill="white"/>
+  <!-- Car roof -->
+  <path d="M55 100 L70 70 H122 L137 100 Z" fill="white"/>
+  <!-- Windows -->
+  <path d="M75 98 L84 75 H102 L111 98 Z" fill="#90CAF9"/>
+  <!-- Wheels -->
+  <circle cx="60" cy="140" r="18" fill="#1565C0"/>
+  <circle cx="60" cy="140" r="9" fill="white"/>
+  <circle cx="132" cy="140" r="18" fill="#1565C0"/>
+  <circle cx="132" cy="140" r="9" fill="white"/>
+  <!-- Odometer icon overlay -->
+  <circle cx="148" cy="52" r="28" fill="#FF6F00"/>
+  <text x="148" y="59" font-size="26" font-weight="900" text-anchor="middle" fill="white" font-family="sans-serif">km</text>
+</svg>
