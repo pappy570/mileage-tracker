@@ -584,11 +584,7 @@
 
       <div class="set-section">
         <div class="set-section-title">Google スプレッドシート連携</div>
-        <div class="gas-url-wrap">
-          <input type="url" id="gasUrlInput" placeholder="GAS Web App URL を貼り付け">
-        </div>
         <div class="gas-actions">
-          <button onclick="saveGasUrl()">💾 保存</button>
           <button onclick="testGas()">🔗 接続テスト</button>
         </div>
       </div>
@@ -605,8 +601,8 @@
   <script>
     const KEY_RECORDS = 'mileage_v1';
     const KEY_STAFF   = 'mileage_staff_v1';
-    const KEY_GAS     = 'mileage_gas_v1';
     const KEY_LSTF    = 'mileage_laststaff_v1';
+    const GAS_URL     = 'https://script.google.com/macros/s/AKfycbwAWHtaT8ki9dprape2QgTkoNwHe1MbQgeDsmFEfmgAlwstUmBk_3gFrYA0HJ4KlqI/exec';
     const KEY_ODO     = 'mileage_odo_v1'; // { "2026-03": { start: 12000, end: 13500 } }
 
     function load(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } }
@@ -654,8 +650,7 @@
 
     // GASからスタッフ一覧を取得してlocalStorageに保存
     async function loadStaffFromGas() {
-      const url = load(KEY_GAS, '');
-      if (!url) return;
+      const url = GAS_URL;
       try {
         const res  = await fetch(`${url}?action=getStaff`);
         const data = await res.json();
@@ -680,11 +675,8 @@
       renderStaffList(); refreshStaffSelect();
       showToast(`${name} を追加しました`);
       // GASにも保存
-      const url = load(KEY_GAS, '');
-      if (url) {
-        try { await fetch(`${url}?action=addStaff&name=${encodeURIComponent(name)}`); }
-        catch(e) {}
-      }
+      try { await fetch(`${GAS_URL}?action=addStaff&name=${encodeURIComponent(name)}`); }
+      catch(e) {}
     }
 
     async function removeStaff(i) {
@@ -694,11 +686,8 @@
       staff.splice(i,1); save(KEY_STAFF, staff);
       renderStaffList(); refreshStaffSelect();
       // GASからも削除
-      const url = load(KEY_GAS, '');
-      if (url) {
-        try { await fetch(`${url}?action=removeStaff&name=${encodeURIComponent(name)}`); }
-        catch(e) {}
-      }
+      try { await fetch(`${GAS_URL}?action=removeStaff&name=${encodeURIComponent(name)}`); }
+      catch(e) {}
     }
 
     // ── START RECORD (業務開始) ──
@@ -948,18 +937,11 @@
     // ── LIST ──
     function renderList() {
       document.getElementById('lMonthDisp').textContent = ymLabel(months.l);
-      if (load(KEY_GAS,'')) fetchFromGas();
-      else {
-        const key = ym(months.l);
-        listData = load(KEY_RECORDS,[]).filter(r => r.date.startsWith(key));
-        document.getElementById('listStatus').textContent = 'GAS未設定：端末内データを表示中';
-        renderListTable();
-      }
+      fetchFromGas();
     }
     function refreshList() { renderList(); }
     async function fetchFromGas() {
-      const url = load(KEY_GAS,'');
-      if (!url) return;
+      const url = GAS_URL;
       document.getElementById('listStatus').innerHTML = '<span class="spin"></span>取得中…';
       try {
         const res  = await fetch(`${url}?action=get&ym=${ym(months.l)}`);
@@ -1052,8 +1034,7 @@
 
     // ── GAS ──
     async function postToGas(rec) {
-      const url = load(KEY_GAS,'');
-      if (!url) return;
+      const url = GAS_URL;
       try {
         await fetch(url, { method:'POST', body: JSON.stringify(rec) });
         const recs = load(KEY_RECORDS,[]);
@@ -1062,8 +1043,7 @@
       } catch(e) { console.warn('GAS sync failed:',e); }
     }
     async function syncAll() {
-      const url  = load(KEY_GAS,'');
-      if (!url) { showToast('GAS URLが設定されていません'); return; }
+      const url  = GAS_URL;
       const recs = load(KEY_RECORDS,[]).filter(r=>!r.synced && r.status !== 'open');
       if (!recs.length) { showToast('未同期のデータはありません'); return; }
       showToast(`📤 ${recs.length}件を送信中…`);
@@ -1076,26 +1056,18 @@
       showToast(`✓ ${ok}/${recs.length}件 送信完了`);
     }
     async function testGas() {
-      const url = document.getElementById('gasUrlInput').value.trim();
-      if (!url) { showToast('URLを入力してください'); return; }
       showToast('接続確認中…');
       try {
-        const res  = await fetch(`${url}?action=test`);
+        const res  = await fetch(`${GAS_URL}?action=test`);
         const data = await res.json();
         if (data.ok) showToast('✓ 接続成功！スプレッドシートに接続できました');
         else throw new Error(data.error);
       } catch(e) { showToast('接続失敗：'+e.message); }
     }
-    function saveGasUrl() {
-      const url = document.getElementById('gasUrlInput').value.trim();
-      save(KEY_GAS,url);
-      showToast(url ? '✓ GAS URLを保存しました' : 'URLをクリアしました');
-    }
 
     // ── SETTINGS ──
     function openSettings() {
       renderStaffList();
-      document.getElementById('gasUrlInput').value = load(KEY_GAS,'');
       document.getElementById('settingsOverlay').classList.add('active');
     }
 
