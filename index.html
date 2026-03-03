@@ -552,6 +552,7 @@
       <div class="month-disp" id="sfMonthDisp"></div>
       <button onclick="changeMonth('sf',1)">›</button>
     </div>
+    <div class="chips" id="sfStaffChips"></div>
 
     <!-- ODO入力 -->
     <div class="card">
@@ -736,6 +737,7 @@
     let months = { h: new Date(), s: new Date(), l: new Date(), sf: new Date() };
     let hStaffFilter = 'all';
     let sStaffFilter = 'all';
+    let sfStaffFilter = 'all';
     let isMaster = load(KEY_MASTER, false);
     let listData = [];
     let hGasData    = []; // 履歴タブのGASデータキャッシュ
@@ -1099,9 +1101,17 @@
       renderStaffSummary();
     }
 
-    // GASデータから月初・月末ODOを自動セット
+    function setSfStaff(val) {
+      sfStaffFilter = val;
+      const key = ym(months.sf);
+      autoFillSfOdo(key);
+      renderStaffSummary();
+    }
+
+    // GASデータから月初・月末ODOを自動セット（スタッフフィルター対応）
     function autoFillSfOdo(key) {
-      const recs = sfGasData.filter(r => r.date.startsWith(key) && r.arrivalOdo > 0);
+      const all  = sfGasData.filter(r => r.date.startsWith(key) && r.arrivalOdo > 0);
+      const recs = sfStaffFilter === 'all' ? all : all.filter(r => r.staff === sfStaffFilter);
       if (!recs.length) return;
       // 一番古い日付の出発ODO
       const asc  = [...recs].sort((a, b) => a.date.localeCompare(b.date) || a.departureOdo - b.departureOdo);
@@ -1144,6 +1154,7 @@
 
     function renderStaffSummary() {
       document.getElementById('sfMonthDisp').textContent = ymLabel(months.sf);
+      buildStaffChips('sfStaffChips', sfStaffFilter, 'setSfStaff');
       const key    = ym(months.sf);
       const odos   = load(KEY_ODO, {});
       const odoVal = odos[key] || {};
@@ -1152,7 +1163,7 @@
       const totKm    = (!isNaN(odoStart) && !isNaN(odoEnd) && odoEnd > odoStart)
                        ? parseFloat((odoEnd - odoStart).toFixed(1)) : 0;
 
-      const recs = sfGasData.filter(r => r.date.startsWith(key));
+      const recs = sfGasData.filter(r => r.date.startsWith(key) && (sfStaffFilter === 'all' || r.staff === sfStaffFilter));
 
       // スタッフ別集計
       const staffMap = {};
