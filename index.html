@@ -670,13 +670,14 @@
     let sStaffFilter = 'all';
     let isMaster = load(KEY_MASTER, false);
     let listData = [];
+    let hGasData = []; // 履歴タブのGASデータキャッシュ
 
     document.addEventListener('DOMContentLoaded', () => {
       applyMode();
       document.getElementById('inputDate').value = toDateVal(new Date());
       refreshStaffSelect();
       renderOpenRecords();
-      renderHistory(); renderSummary(); renderList();
+      fetchHistoryFromGas(); renderSummary(); renderList();
       // GASからスタッフ名・記録を自動読み込み
       loadStaffFromGas();
     });
@@ -843,7 +844,7 @@
       closeOverlay('endOverlay');
       showToast(`✓ ${rec.staff}：${distance}km を記録しました`);
       renderOpenRecords();
-      renderHistory(); renderSummary();
+      fetchHistoryFromGas(); renderSummary();
       postToGas(records[idx]);
     }
 
@@ -862,7 +863,7 @@
       const [t,s] = pageInfo[name];
       document.getElementById('pageTitle').textContent = t;
       document.getElementById('pageSub').textContent   = s;
-      if (name === 'history') renderHistory();
+      if (name === 'history') fetchHistoryFromGas();
       if (name === 'summary') renderSummary();
       if (name === 'list')    renderList();
     }
@@ -870,7 +871,7 @@
     function changeMonth(p, d) {
       const cur = months[p];
       months[p] = new Date(cur.getFullYear(), cur.getMonth()+d, 1);
-      if (p==='h') renderHistory();
+      if (p==='h') fetchHistoryFromGas();
       if (p==='s') { renderSummary(); loadOdoInputs(); }
       if (p==='l') renderList();
     }
@@ -886,12 +887,28 @@
 
     // ── HISTORY ──
     function setHStaff(val) { hStaffFilter = val; renderHistory(); }
+
+    async function fetchHistoryFromGas() {
+      const key = ym(months.h);
+      const el  = document.getElementById('historyList');
+      el.innerHTML = '<div class="empty"><span class="spin"></span><div style="margin-top:10px;font-size:13px;">取得中…</div></div>';
+      try {
+        const res  = await fetch(`${GAS_URL}?action=get&ym=${key}`);
+        const data = await res.json();
+        if (data.ok) hGasData = data.records;
+      } catch(e) { /* オフライン時はlocalStorageを使う */ }
+      renderHistory();
+    }
+
     function renderHistory() {
       document.getElementById('hMonthDisp').textContent = ymLabel(months.h);
       buildStaffChips('hStaffChips', hStaffFilter, 'setHStaff');
       const key  = ym(months.h);
-      const recs = load(KEY_RECORDS,[])
-        .filter(r => r.status !== 'open')
+      // GASデータ＋ローカルのopenレコードをマージ（IDで重複除去）
+      const localOpen = load(KEY_RECORDS,[]).filter(r => r.status === 'open' && r.date.startsWith(key));
+      const merged = [...hGasData];
+      localOpen.forEach(r => { if (!merged.find(g => g.id === r.id)) merged.push(r); });
+      const recs = merged
         .filter(r => r.date.startsWith(key))
         .filter(r => hStaffFilter==='all' || r.staff===hStaffFilter)
         .sort((a,b) => b.date.localeCompare(a.date) || (a.staff||'').localeCompare(b.staff||''));
@@ -1042,7 +1059,7 @@
       save(KEY_RECORDS, load(KEY_RECORDS,[]).filter(r=>r.id!==id));
       closeOverlay('detailOverlay');
       showToast('記録を削除しました');
-      renderHistory(); renderSummary(); renderList();
+      fetchHistoryFromGas(); renderSummary(); renderList();
     }
 
     // ── CSV ──
