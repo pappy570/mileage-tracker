@@ -192,6 +192,36 @@
     .rec-km { font-size: 17px; font-weight: 800; flex-shrink: 0; color: var(--primary); }
     .rec-km small { font-size: 11px; font-weight: 500; color: var(--text-sub); }
 
+    /* OPEN (進行中) RECORDS */
+    .open-card {
+      background: #FFF8E1; border: 2px solid #FFB300;
+      border-radius: 14px; padding: 15px; margin-bottom: 11px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+    .open-card-title {
+      font-size: 11px; font-weight: 700; color: #E65100;
+      text-transform: uppercase; letter-spacing: .7px; margin-bottom: 11px;
+    }
+    .open-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 0; border-bottom: 1px solid #FFE082;
+    }
+    .open-item:last-child { border-bottom: none; padding-bottom: 0; }
+    .open-info { flex: 1; min-width: 0; }
+    .open-staff { font-size: 14px; font-weight: 800; color: #E65100; }
+    .open-sub   { font-size: 12px; color: #795548; margin-top: 2px; }
+    .btn-end {
+      padding: 9px 16px; background: #FF6F00; color: white;
+      border: none; border-radius: 10px;
+      font-size: 13px; font-weight: 700; cursor: pointer; flex-shrink: 0;
+    }
+    .btn-start {
+      width: 100%; padding: 15px;
+      background: #1976D2; color: white;
+      border: none; border-radius: 12px;
+      font-size: 16px; font-weight: 700; cursor: pointer;
+    }
+
     /* STATS GRID */
     .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 11px; }
     .stat-card { background: var(--card); border-radius: 14px; padding: 15px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); text-align: center; }
@@ -319,8 +349,18 @@
 
   <!-- PAGE: 入力 -->
   <div class="page active" id="page-input">
+
+    <!-- 進行中の業務 -->
+    <div id="openRecordsSection" style="display:none;">
+      <div class="open-card">
+        <div class="open-card-title">🚗 業務中（到着ODOを入力して業務終了してください）</div>
+        <div id="openRecordsList"></div>
+      </div>
+    </div>
+
+    <!-- 業務開始フォーム -->
     <div class="card">
-      <div class="card-title">スタッフ・基本情報</div>
+      <div class="card-title">業務開始</div>
 
       <div class="form-group">
         <label>スタッフ名</label>
@@ -343,22 +383,14 @@
     </div>
 
     <div class="card">
-      <div class="card-title">ODOメーター値（業務）</div>
-      <div class="odo-row">
-        <div class="form-group">
-          <label>出発時 (km)</label>
-          <input type="number" id="inputDep" placeholder="例：12345" inputmode="numeric" min="0">
-        </div>
-        <div class="odo-arrow">→</div>
-        <div class="form-group">
-          <label>到着時 (km)</label>
-          <input type="number" id="inputArr" placeholder="例：12367" inputmode="numeric" min="0">
-        </div>
+      <div class="card-title">出発ODOメーター値</div>
+      <div class="form-group" style="margin-bottom:0;">
+        <label>出発時 ODO (km)</label>
+        <input type="number" id="inputDep" placeholder="例：12345" inputmode="numeric" min="0">
       </div>
-      <div id="distDisp" class="dist-display">ー<small>km</small></div>
     </div>
 
-    <button class="btn-primary" onclick="saveRecord()">💼 業務記録を保存</button>
+    <button class="btn-start" onclick="startRecord()">🚗 業務開始を記録</button>
   </div>
 
   <!-- PAGE: 履歴 -->
@@ -516,6 +548,23 @@
     </div>
   </div>
 
+  <!-- 業務終了 MODAL -->
+  <div class="overlay center" id="endOverlay" onclick="onOvClick(event,'endOverlay')">
+    <div class="modal center-modal">
+      <div class="modal-hd">
+        <div class="modal-title">🏁 業務終了</div>
+        <button class="modal-close" onclick="closeOverlay('endOverlay')">×</button>
+      </div>
+      <div id="endRecordInfo" style="margin-bottom:15px;padding:12px;background:#FFF8E1;border-radius:10px;font-size:14px;line-height:1.6;"></div>
+      <div class="form-group">
+        <label>到着時 ODO (km)</label>
+        <input type="number" id="endArr" placeholder="例：12367" inputmode="numeric" min="0" oninput="updateEndDist()">
+      </div>
+      <div id="endDistDisp" class="dist-display" style="margin-bottom:15px;">ー<small>km</small></div>
+      <button class="btn-primary" onclick="completeRecord()">✓ 業務終了を記録</button>
+    </div>
+  </div>
+
   <!-- SETTINGS MODAL -->
   <div class="overlay center" id="settingsOverlay" onclick="onOvClick(event,'settingsOverlay')">
     <div class="modal center-modal">
@@ -579,9 +628,8 @@
 
     document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('inputDate').value = toDateVal(new Date());
-      document.getElementById('inputDep').addEventListener('input', updateDist);
-      document.getElementById('inputArr').addEventListener('input', updateDist);
       refreshStaffSelect();
+      renderOpenRecords();
       renderHistory(); renderSummary(); renderList();
       // GASからスタッフ名・記録を自動読み込み
       loadStaffFromGas();
@@ -653,15 +701,86 @@
       }
     }
 
-    // ── DISTANCE ──
-    function updateDist() {
-      const dep = parseFloat(document.getElementById('inputDep').value);
-      const arr = parseFloat(document.getElementById('inputArr').value);
-      const el  = document.getElementById('distDisp');
+    // ── START RECORD (業務開始) ──
+    function startRecord() {
+      const staff = document.getElementById('inputStaff').value;
+      const date  = document.getElementById('inputDate').value;
+      const memo  = document.getElementById('inputMemo').value.trim();
+      const dep   = parseFloat(document.getElementById('inputDep').value);
+
+      if (!staff) { showToast('スタッフを選択してください'); return; }
+      if (!date)  { showToast('日付を入力してください'); return; }
+      if (isNaN(dep)) { showToast('出発ODO値を入力してください'); return; }
+
+      const rec = {
+        id: Date.now().toString(), staff, date,
+        memo: memo || '業務',
+        departureOdo: dep, arrivalOdo: 0, distance: 0,
+        status: 'open',
+        synced: false, createdAt: new Date().toISOString()
+      };
+
+      const records = load(KEY_RECORDS, []);
+      records.push(rec); save(KEY_RECORDS, records);
+
+      document.getElementById('inputMemo').value = '';
+      document.getElementById('inputDep').value  = '';
+
+      showToast(`✓ ${staff}：業務開始を記録しました`);
+      renderOpenRecords();
+    }
+
+    // ── OPEN RECORDS ──
+    function renderOpenRecords() {
+      const openRecs = load(KEY_RECORDS, []).filter(r => r.status === 'open');
+      const section  = document.getElementById('openRecordsSection');
+      const list     = document.getElementById('openRecordsList');
+      if (!openRecs.length) { section.style.display = 'none'; return; }
+      section.style.display = 'block';
+      list.innerHTML = openRecs.map(r => `
+        <div class="open-item">
+          <div class="open-info">
+            <div class="open-staff">${esc(r.staff)}</div>
+            <div class="open-sub">${dispDate(r.date)}　出発ODO: ${r.departureOdo.toLocaleString()} km　${esc(r.memo)}</div>
+          </div>
+          <div style="display:flex;gap:6px;flex-shrink:0;">
+            <button class="btn-end" onclick="openEndModal('${r.id}')">業務終了</button>
+            <button class="btn-danger-sm" onclick="cancelOpenRecord('${r.id}')">取消</button>
+          </div>
+        </div>`).join('');
+    }
+
+    function cancelOpenRecord(id) {
+      if (!confirm('この業務開始を取り消しますか？')) return;
+      save(KEY_RECORDS, load(KEY_RECORDS, []).filter(r => r.id !== id));
+      renderOpenRecords();
+      showToast('取り消しました');
+    }
+
+    // ── END RECORD (業務終了) ──
+    let endTargetId = null;
+    function openEndModal(id) {
+      endTargetId = id;
+      const rec = load(KEY_RECORDS, []).find(r => r.id === id);
+      if (!rec) return;
+      document.getElementById('endRecordInfo').innerHTML =
+        `<strong>${esc(rec.staff)}</strong>　${dispDate(rec.date)}<br>` +
+        `訪問先：${esc(rec.memo)}　出発ODO: <strong>${rec.departureOdo.toLocaleString()} km</strong>`;
+      document.getElementById('endArr').value = '';
+      document.getElementById('endDistDisp').className = 'dist-display';
+      document.getElementById('endDistDisp').innerHTML = 'ー<small>km</small>';
+      document.getElementById('endOverlay').classList.add('active');
+    }
+
+    function updateEndDist() {
+      const rec = load(KEY_RECORDS, []).find(r => r.id === endTargetId);
+      if (!rec) return;
+      const arr = parseFloat(document.getElementById('endArr').value);
+      const el  = document.getElementById('endDistDisp');
       el.className = 'dist-display';
-      if (!isNaN(dep) && !isNaN(arr)) {
-        if (arr > dep) {
-          el.innerHTML = `<span style="font-size:28px;">${(arr-dep).toFixed(1)}</span><small>km</small>`;
+      if (!isNaN(arr)) {
+        if (arr > rec.departureOdo) {
+          el.innerHTML = `<span style="font-size:28px;">${(arr - rec.departureOdo).toFixed(1)}</span><small>km</small>`;
         } else {
           el.classList.add('dist-error');
           el.innerHTML = '到着値は出発値より大きい数を入力してください';
@@ -671,39 +790,22 @@
       }
     }
 
-    // ── SAVE RECORD ──
-    function saveRecord() {
-      const staff = document.getElementById('inputStaff').value;
-      const date  = document.getElementById('inputDate').value;
-      const memo  = document.getElementById('inputMemo').value.trim();
-      const dep   = parseFloat(document.getElementById('inputDep').value);
-      const arr   = parseFloat(document.getElementById('inputArr').value);
-
-      if (!staff) { showToast('スタッフを選択してください'); return; }
-      if (!date)  { showToast('日付を入力してください'); return; }
-      if (isNaN(dep) || isNaN(arr)) { showToast('ODO値を入力してください'); return; }
-      if (arr <= dep) { showToast('到着値は出発値より大きい数を入力してください'); return; }
-
-      const distance = parseFloat((arr-dep).toFixed(1));
-      const rec = {
-        id: Date.now().toString(), staff, date,
-        memo: memo || '業務',
-        departureOdo: dep, arrivalOdo: arr, distance,
-        synced: false, createdAt: new Date().toISOString()
-      };
-
+    function completeRecord() {
+      const arr = parseFloat(document.getElementById('endArr').value);
+      if (isNaN(arr)) { showToast('到着ODO値を入力してください'); return; }
       const records = load(KEY_RECORDS, []);
-      records.push(rec); save(KEY_RECORDS, records);
-
-      document.getElementById('inputMemo').value = '';
-      document.getElementById('inputDep').value  = '';
-      document.getElementById('inputArr').value  = '';
-      document.getElementById('distDisp').className = 'dist-display';
-      document.getElementById('distDisp').innerHTML = 'ー<small>km</small>';
-
-      showToast(`✓ ${staff}：${distance}km を記録しました`);
+      const idx     = records.findIndex(r => r.id === endTargetId);
+      if (idx < 0) { showToast('記録が見つかりません'); return; }
+      const rec = records[idx];
+      if (arr <= rec.departureOdo) { showToast('到着値は出発値より大きい数を入力してください'); return; }
+      const distance = parseFloat((arr - rec.departureOdo).toFixed(1));
+      records[idx] = { ...rec, arrivalOdo: arr, distance, status: 'closed', synced: false };
+      save(KEY_RECORDS, records);
+      closeOverlay('endOverlay');
+      showToast(`✓ ${rec.staff}：${distance}km を記録しました`);
+      renderOpenRecords();
       renderHistory(); renderSummary();
-      postToGas(rec);
+      postToGas(records[idx]);
     }
 
     // ── NAVIGATION ──
@@ -750,6 +852,7 @@
       buildStaffChips('hStaffChips', hStaffFilter, 'setHStaff');
       const key  = ym(months.h);
       const recs = load(KEY_RECORDS,[])
+        .filter(r => r.status !== 'open')
         .filter(r => r.date.startsWith(key))
         .filter(r => hStaffFilter==='all' || r.staff===hStaffFilter)
         .sort((a,b) => b.date.localeCompare(a.date) || (a.staff||'').localeCompare(b.staff||''));
@@ -812,6 +915,7 @@
       const odoEnd   = parseFloat(document.getElementById('odoEnd')?.value   || odoVal.end   || '');
 
       const recs   = load(KEY_RECORDS,[])
+        .filter(r => r.status !== 'open')
         .filter(r => r.date.startsWith(key))
         .filter(r => sStaffFilter==='all' || r.staff===sStaffFilter);
       const bizKm  = parseFloat(recs.reduce((s,r) => s+r.distance, 0).toFixed(1));
@@ -960,7 +1064,7 @@
     async function syncAll() {
       const url  = load(KEY_GAS,'');
       if (!url) { showToast('GAS URLが設定されていません'); return; }
-      const recs = load(KEY_RECORDS,[]).filter(r=>!r.synced);
+      const recs = load(KEY_RECORDS,[]).filter(r=>!r.synced && r.status !== 'open');
       if (!recs.length) { showToast('未同期のデータはありません'); return; }
       showToast(`📤 ${recs.length}件を送信中…`);
       let ok=0;
