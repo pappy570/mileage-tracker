@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>走行記録</title>
+  <title>走行距離計サン</title>
   <link rel="manifest" href="manifest.json">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="走行記録">
+  <meta name="apple-mobile-web-app-title" content="走行距離計サン">
   <meta name="theme-color" content="#1976D2">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -583,6 +583,8 @@
       document.getElementById('inputArr').addEventListener('input', updateDist);
       refreshStaffSelect();
       renderHistory(); renderSummary(); renderList();
+      // GASからスタッフ名・記録を自動読み込み
+      loadStaffFromGas();
     });
 
     // ── STAFF ──
@@ -601,7 +603,25 @@
         ? '<div style="color:var(--text-sub);font-size:13px;padding:6px 0;">スタッフを追加してください</div>'
         : staff.map((s,i) => `<div class="staff-item"><span>${esc(s)}</span><button class="btn-danger-sm" onclick="removeStaff(${i})">削除</button></div>`).join('');
     }
-    function addStaff() {
+
+    // GASからスタッフ一覧を取得してlocalStorageに保存
+    async function loadStaffFromGas() {
+      const url = load(KEY_GAS, '');
+      if (!url) return;
+      try {
+        const res  = await fetch(`${url}?action=getStaff`);
+        const data = await res.json();
+        if (data.ok && Array.isArray(data.staff) && data.staff.length > 0) {
+          const local  = load(KEY_STAFF, []);
+          const merged = [...new Set([...local, ...data.staff])].filter(Boolean);
+          save(KEY_STAFF, merged);
+          refreshStaffSelect();
+          renderHistory(); renderSummary();
+        }
+      } catch(e) { /* オフライン時はlocalStorageを使う */ }
+    }
+
+    async function addStaff() {
       const inp  = document.getElementById('newStaffInput');
       const name = inp.value.trim();
       if (!name) return;
@@ -611,12 +631,26 @@
       inp.value = '';
       renderStaffList(); refreshStaffSelect();
       showToast(`${name} を追加しました`);
+      // GASにも保存
+      const url = load(KEY_GAS, '');
+      if (url) {
+        try { await fetch(`${url}?action=addStaff&name=${encodeURIComponent(name)}`); }
+        catch(e) {}
+      }
     }
-    function removeStaff(i) {
+
+    async function removeStaff(i) {
       const staff = getStaff();
       if (!confirm(`「${staff[i]}」を削除しますか？`)) return;
+      const name = staff[i];
       staff.splice(i,1); save(KEY_STAFF, staff);
       renderStaffList(); refreshStaffSelect();
+      // GASからも削除
+      const url = load(KEY_GAS, '');
+      if (url) {
+        try { await fetch(`${url}?action=removeStaff&name=${encodeURIComponent(name)}`); }
+        catch(e) {}
+      }
     }
 
     // ── DISTANCE ──
