@@ -365,11 +365,9 @@
       <div class="sub" id="pageSub">業務の移動を記録してください</div>
       <span class="master-badge" id="masterBadge" style="display:none;">👑 マスターモード</span>
     </div>
-    <!-- ユーザーモード: 鍵アイコン -->
     <button class="header-gear" id="lockBtn" onclick="openPinModal()" title="マスターモード">
       <svg viewBox="0 0 24 24" fill="white"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
     </button>
-    <!-- マスターモード: 歯車アイコン -->
     <button class="header-gear" id="gearBtn" onclick="openSettings()" style="display:none;" title="設定">
       <svg viewBox="0 0 24 24" fill="white"><path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.74,8.87C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.07,0.94l-2.03,1.58c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/></svg>
     </button>
@@ -377,19 +375,14 @@
 
   <!-- PAGE: 入力 -->
   <div class="page active" id="page-input">
-
-    <!-- 進行中の業務 -->
     <div id="openRecordsSection" style="display:none;">
       <div class="open-card">
         <div class="open-card-title">🚗 業務中（到着ODOを入力して業務終了してください）</div>
         <div id="openRecordsList"></div>
       </div>
     </div>
-
-    <!-- 業務開始フォーム -->
     <div class="card">
       <div class="card-title">業務開始</div>
-
       <div class="form-group">
         <label>スタッフ名</label>
         <div class="select-wrap">
@@ -398,18 +391,15 @@
           </select>
         </div>
       </div>
-
       <div class="form-group">
         <label>日付</label>
         <input type="date" id="inputDate">
       </div>
-
       <div class="form-group" style="margin-bottom:0;">
         <label>訪問先・メモ（任意）</label>
         <input type="text" id="inputMemo" placeholder="例：山田様宅、〇〇病院">
       </div>
     </div>
-
     <div class="card">
       <div class="card-title">出発ODOメーター値</div>
       <div class="form-group" style="margin-bottom:0;">
@@ -417,7 +407,6 @@
         <input type="number" id="inputDep" placeholder="例：12345" inputmode="numeric" min="0">
       </div>
     </div>
-
     <button class="btn-start" onclick="startRecord()">🚗 業務開始を記録</button>
   </div>
 
@@ -440,8 +429,6 @@
       <button onclick="changeMonth('s',1)">›</button>
     </div>
     <div class="chips" id="sStaffChips"></div>
-
-    <!-- 月初・月末ODO入力 -->
     <div class="card">
       <div class="card-title">月初・月末ODOメーター値を入力</div>
       <div class="odo-month-row">
@@ -460,8 +447,6 @@
         <span class="odo-result-val" id="totalDistVal">ー<small>km</small></span>
       </div>
     </div>
-
-    <!-- 走行距離まとめ -->
     <div class="stats-grid">
       <div class="stat-card">
         <div class="stat-val" id="sBiz" style="color:var(--primary);">0</div>
@@ -476,36 +461,26 @@
         <div class="stat-lbl">総走行距離 (km)</div>
       </div>
     </div>
-
-    <!-- 使用率 -->
     <div class="rate-card">
       <div class="card-title" style="margin-bottom:14px;">使用率</div>
-
       <div class="rate-row">
         <div class="rate-label" style="color:var(--primary);">💼 業務</div>
         <div class="rate-bar-wrap">
-          <div class="rate-bar">
-            <div class="rate-fill" id="bizFill" style="width:0%;background:var(--primary);"></div>
-          </div>
+          <div class="rate-bar"><div class="rate-fill" id="bizFill" style="width:0%;background:var(--primary);"></div></div>
         </div>
         <div class="rate-pct" id="bizPct" style="color:var(--primary);">0%</div>
       </div>
-
       <div class="rate-row">
         <div class="rate-label" style="color:var(--priv-color);">🚗 プライベート</div>
         <div class="rate-bar-wrap">
-          <div class="rate-bar">
-            <div class="rate-fill" id="privFill" style="width:0%;background:var(--priv-color);"></div>
-          </div>
+          <div class="rate-bar"><div class="rate-fill" id="privFill" style="width:0%;background:var(--priv-color);"></div></div>
         </div>
         <div class="rate-pct" id="privPct" style="color:var(--priv-color);">0%</div>
       </div>
-
       <div style="margin-top:12px; padding-top:12px; border-top:1px solid var(--border); font-size:12px; color:var(--text-sub); text-align:center;">
         税務上の判定：業務使用が<strong style="color:var(--ok);">50%超</strong>で業務用車両として認められます
       </div>
     </div>
-
     <div class="card">
       <div class="card-title">記録件数</div>
       <div style="display:flex;text-align:center;">
@@ -513,14 +488,13 @@
         <div style="flex:1;"><div style="font-size:24px;font-weight:800;" id="sTotCnt">0</div><div style="font-size:11px;color:var(--text-sub);">合計件数</div></div>
       </div>
     </div>
-
     <button class="export-btn" onclick="exportCSV('s')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
       月次レポートCSVをダウンロード
     </button>
   </div>
 
-  <!-- PAGE: 一覧（全スタッフ） -->
+  <!-- PAGE: 一覧 -->
   <div class="page" id="page-list">
     <div class="month-sel">
       <button onclick="changeMonth('l',-1)">‹</button>
@@ -533,9 +507,7 @@
     </div>
     <div class="card" style="padding:0;overflow:auto;">
       <table class="list-table">
-        <thead>
-          <tr><th>日付</th><th>名前</th><th style="text-align:right;">距離</th><th>メモ</th></tr>
-        </thead>
+        <thead><tr><th>日付</th><th>名前</th><th style="text-align:right;">距離</th><th>メモ</th></tr></thead>
         <tbody id="listBody"></tbody>
       </table>
     </div>
@@ -614,7 +586,6 @@
         <div class="modal-title">⚙ 設定</div>
         <button class="modal-close" onclick="closeOverlay('settingsOverlay')">×</button>
       </div>
-
       <div class="set-section">
         <div class="set-section-title">スタッフ管理</div>
         <div class="staff-list" id="staffList"></div>
@@ -623,19 +594,16 @@
           <button class="btn-outline" onclick="addStaff()">追加</button>
         </div>
       </div>
-
       <div class="set-section">
         <div class="set-section-title">Google スプレッドシート連携</div>
         <div class="gas-actions">
           <button onclick="testGas()">🔗 接続テスト</button>
         </div>
       </div>
-
       <div class="set-section" style="margin-bottom:0;">
         <div class="set-section-title">データ同期</div>
         <button class="sync-all-btn" onclick="syncAll()">📤 未同期データを全件送信</button>
       </div>
-
       <div class="set-section" style="margin-bottom:0;margin-top:8px;">
         <button class="exit-master-btn" onclick="exitMasterMode()">🔒 ユーザーモードに戻る</button>
       </div>
@@ -651,7 +619,7 @@
     const KEY_MASTER  = 'mileage_master_v1';
     const GAS_URL     = 'https://script.google.com/macros/s/AKfycbwAWHtaT8ki9dprape2QgTkoNwHe1MbQgeDsmFEfmgAlwstUmBk_3gFrYA0HJ4KlqI/exec';
     const MASTER_PIN  = '2022';
-    const KEY_ODO     = 'mileage_odo_v1'; // { "2026-03": { start: 12000, end: 13500 } }
+    const KEY_ODO     = 'mileage_odo_v1';
 
     function load(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } }
     function save(k, v) { localStorage.setItem(k, JSON.stringify(v)); }
@@ -670,9 +638,9 @@
     let sStaffFilter = 'all';
     let isMaster = load(KEY_MASTER, false);
     let listData = [];
-    let hGasData    = []; // 履歴タブのGASデータキャッシュ
-    let hDisplayData = []; // 履歴タブの表示データ（GAS＋localOpen マージ済み）
-    let sGasData    = []; // 集計タブのGASデータキャッシュ
+    let hGasData     = [];
+    let hDisplayData = [];
+    let sGasData     = [];
 
     document.addEventListener('DOMContentLoaded', () => {
       applyMode();
@@ -680,7 +648,6 @@
       refreshStaffSelect();
       renderOpenRecords();
       fetchHistoryFromGas(); fetchSummaryFromGas(); renderList();
-      // GASからスタッフ名・記録を自動読み込み
       loadStaffFromGas();
     });
 
@@ -701,11 +668,9 @@
         : staff.map((s,i) => `<div class="staff-item"><span>${esc(s)}</span><button class="btn-danger-sm" onclick="removeStaff(${i})">削除</button></div>`).join('');
     }
 
-    // GASからスタッフ一覧を取得してlocalStorageに保存
     async function loadStaffFromGas() {
-      const url = GAS_URL;
       try {
-        const res  = await fetch(`${url}?action=getStaff`);
+        const res  = await fetch(`${GAS_URL}?action=getStaff`);
         const data = await res.json();
         if (data.ok && Array.isArray(data.staff) && data.staff.length > 0) {
           const local  = load(KEY_STAFF, []);
@@ -714,7 +679,7 @@
           refreshStaffSelect();
           renderHistory(); renderSummary();
         }
-      } catch(e) { /* オフライン時はlocalStorageを使う */ }
+      } catch(e) {}
     }
 
     async function addStaff() {
@@ -727,9 +692,7 @@
       inp.value = '';
       renderStaffList(); refreshStaffSelect();
       showToast(`${name} を追加しました`);
-      // GASにも保存
-      try { await fetch(`${GAS_URL}?action=addStaff&name=${encodeURIComponent(name)}`); }
-      catch(e) {}
+      try { await fetch(`${GAS_URL}?action=addStaff&name=${encodeURIComponent(name)}`); } catch(e) {}
     }
 
     async function removeStaff(i) {
@@ -738,36 +701,28 @@
       const name = staff[i];
       staff.splice(i,1); save(KEY_STAFF, staff);
       renderStaffList(); refreshStaffSelect();
-      // GASからも削除
-      try { await fetch(`${GAS_URL}?action=removeStaff&name=${encodeURIComponent(name)}`); }
-      catch(e) {}
+      try { await fetch(`${GAS_URL}?action=removeStaff&name=${encodeURIComponent(name)}`); } catch(e) {}
     }
 
-    // ── START RECORD (業務開始) ──
+    // ── START RECORD ──
     function startRecord() {
       const staff = document.getElementById('inputStaff').value;
       const date  = document.getElementById('inputDate').value;
       const memo  = document.getElementById('inputMemo').value.trim();
       const dep   = parseFloat(document.getElementById('inputDep').value);
-
       if (!staff) { showToast('スタッフを選択してください'); return; }
       if (!date)  { showToast('日付を入力してください'); return; }
       if (isNaN(dep)) { showToast('出発ODO値を入力してください'); return; }
-
       const rec = {
         id: Date.now().toString(), staff, date,
         memo: memo || '業務',
         departureOdo: dep, arrivalOdo: 0, distance: 0,
-        status: 'open',
-        synced: false, createdAt: new Date().toISOString()
+        status: 'open', synced: false, createdAt: new Date().toISOString()
       };
-
       const records = load(KEY_RECORDS, []);
       records.push(rec); save(KEY_RECORDS, records);
-
       document.getElementById('inputMemo').value = '';
       document.getElementById('inputDep').value  = '';
-
       showToast(`✓ ${staff}：業務開始を記録しました`);
       renderOpenRecords();
     }
@@ -799,7 +754,7 @@
       showToast('取り消しました');
     }
 
-    // ── END RECORD (業務終了) ──
+    // ── END RECORD ──
     let endTargetId = null;
     function openEndModal(id) {
       endTargetId = id;
@@ -898,7 +853,7 @@
         const res  = await fetch(`${GAS_URL}?action=get&ym=${key}`);
         const data = await res.json();
         if (data.ok) hGasData = data.records;
-      } catch(e) { /* オフライン時はlocalStorageを使う */ }
+      } catch(e) {}
       renderHistory();
     }
 
@@ -906,16 +861,14 @@
       document.getElementById('hMonthDisp').textContent = ymLabel(months.h);
       buildStaffChips('hStaffChips', hStaffFilter, 'setHStaff');
       const key  = ym(months.h);
-      // GASデータ＋ローカルのopenレコードをマージ（IDで重複除去）
       const localOpen = load(KEY_RECORDS,[]).filter(r => r.status === 'open' && r.date.startsWith(key));
       const merged = [...hGasData];
       localOpen.forEach(r => { if (!merged.find(g => g.id === r.id)) merged.push(r); });
-      hDisplayData = merged; // showDetail() 用に全マージデータを保持
+      hDisplayData = merged;
       const recs = merged
         .filter(r => r.date.startsWith(key))
         .filter(r => hStaffFilter==='all' || r.staff===hStaffFilter)
         .sort((a,b) => b.date.localeCompare(a.date) || (a.staff||'').localeCompare(b.staff||''));
-
       const el = document.getElementById('historyList');
       if (!recs.length) {
         el.innerHTML = `<div class="empty"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.95-2.05L6.7 18.3C8.32 19.98 10.54 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9z"/></svg><div style="font-size:14px;font-weight:600;">この月の記録はありません</div></div>`;
@@ -941,7 +894,7 @@
         const res  = await fetch(`${GAS_URL}?action=get&ym=${key}`);
         const data = await res.json();
         if (data.ok) sGasData = data.records;
-      } catch(e) { /* オフライン時はそのまま */ }
+      } catch(e) {}
       renderSummary();
     }
 
@@ -962,7 +915,6 @@
         const total = (end - start).toFixed(1);
         document.getElementById('totalDistVal').innerHTML = `${total}<small>km</small>`;
         el.style.display = 'flex';
-        // save
         const key  = ym(months.s);
         const odos = load(KEY_ODO, {});
         odos[key]  = { start, end };
@@ -976,13 +928,11 @@
     function renderSummary() {
       document.getElementById('sMonthDisp').textContent = ymLabel(months.s);
       buildStaffChips('sStaffChips', sStaffFilter, 'setSStaff');
-
       const key    = ym(months.s);
       const odos   = load(KEY_ODO, {});
       const odoVal = odos[key] || {};
       const odoStart = parseFloat(document.getElementById('odoStart')?.value || odoVal.start || '');
       const odoEnd   = parseFloat(document.getElementById('odoEnd')?.value   || odoVal.end   || '');
-
       const recs   = sGasData
         .filter(r => r.date.startsWith(key))
         .filter(r => sStaffFilter==='all' || r.staff===sStaffFilter);
@@ -992,26 +942,19 @@
       const privKm = totKm > 0 ? parseFloat(Math.max(0, totKm - bizKm).toFixed(1)) : 0;
       const bizPct  = totKm > 0 ? Math.round(bizKm  / totKm * 100) : 0;
       const privPct = totKm > 0 ? Math.round(privKm / totKm * 100) : 0;
-
       document.getElementById('sBiz').textContent   = bizKm;
       document.getElementById('sPriv').textContent  = privKm > 0 ? privKm : (totKm > 0 ? 0 : '─');
       document.getElementById('sTot').textContent   = totKm > 0 ? totKm : '─';
       document.getElementById('sBizCnt').textContent = recs.length;
       document.getElementById('sTotCnt').textContent = recs.length;
-
       document.getElementById('bizFill').style.width  = `${bizPct}%`;
       document.getElementById('privFill').style.width = `${privPct}%`;
       document.getElementById('bizPct').textContent   = totKm > 0 ? `${bizPct}%`  : '─';
       document.getElementById('privPct').textContent  = totKm > 0 ? `${privPct}%` : '─';
-
-      // 業務使用率の色分け（50%以上:緑 / 未満:オレンジ）
       const okColor = bizPct >= 50 ? 'var(--ok)' : 'var(--warn)';
       document.getElementById('bizFill').style.background = okColor;
       document.getElementById('bizPct').style.color       = okColor;
     }
-
-    // 集計ページ表示時にODO値を読み込む
-    const _origShowPage = showPage;
 
     // ── LIST ──
     function renderList() {
@@ -1020,10 +963,9 @@
     }
     function refreshList() { renderList(); }
     async function fetchFromGas() {
-      const url = GAS_URL;
       document.getElementById('listStatus').innerHTML = '<span class="spin"></span>取得中…';
       try {
-        const res  = await fetch(`${url}?action=get&ym=${ym(months.l)}`);
+        const res  = await fetch(`${GAS_URL}?action=get&ym=${ym(months.l)}`);
         const data = await res.json();
         if (data.ok) { listData = data.records; document.getElementById('listStatus').textContent = `${data.records.length}件 取得済み`; renderListTable(); }
         else throw new Error(data.error);
@@ -1079,10 +1021,8 @@
       const key  = ym(months[page==='l'?'l':'s']);
       const data = page==='l'
         ? [...listData].sort((a,b)=>a.date.localeCompare(b.date)||(a.staff||'').localeCompare(b.staff||''))
-        : load(KEY_RECORDS,[]).filter(r=>r.date.startsWith(key)&&(sStaffFilter==='all'||r.staff===sStaffFilter)).sort((a,b)=>a.date.localeCompare(b.date));
-
+        : sGasData.filter(r=>r.date.startsWith(key)&&(sStaffFilter==='all'||r.staff===sStaffFilter)).sort((a,b)=>a.date.localeCompare(b.date));
       if (!data.length) { showToast('この月の記録がありません'); return; }
-
       const odos   = load(KEY_ODO,{});
       const odoVal = odos[key]||{};
       const totKm  = (odoVal.start&&odoVal.end) ? (odoVal.end-odoVal.start).toFixed(1) : '';
@@ -1090,18 +1030,13 @@
       const privKm = totKm ? Math.max(0,totKm-bizKm).toFixed(1) : '';
       const bizPct  = totKm ? Math.round(bizKm/totKm*100) : '';
       const privPct = totKm ? Math.round(privKm/totKm*100) : '';
-
       const header = '日付,スタッフ名,訪問先・メモ,出発ODO(km),到着ODO(km),走行距離(km)';
       const rows   = data.map(r=>[
         r.date, `"${(r.staff||'').replace(/"/g,'""')}"`,
         `"${(r.memo||'').replace(/"/g,'""')}"`,
         r.departureOdo||'', r.arrivalOdo||'', r.distance
       ].join(','));
-      const footer = [
-        '',
-        `集計,業務走行:${bizKm}km,プライベート:${privKm||'─'}km,総走行:${totKm||'─'}km,業務使用率:${bizPct!==''?bizPct+'%':'─'},プライベート使用率:${privPct!==''?privPct+'%':'─'}`
-      ];
-
+      const footer = ['', `集計,業務走行:${bizKm}km,プライベート:${privKm||'─'}km,総走行:${totKm||'─'}km,業務使用率:${bizPct!==''?bizPct+'%':'─'},プライベート使用率:${privPct!==''?privPct+'%':'─'}`];
       const csv = '\uFEFF'+[header,...rows,...footer].join('\n');
       const a = Object.assign(document.createElement('a'),{
         href: URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'})),
@@ -1113,21 +1048,19 @@
 
     // ── GAS ──
     async function postToGas(rec) {
-      const url = GAS_URL;
       try {
-        await fetch(url, { method:'POST', body: JSON.stringify(rec) });
+        await fetch(GAS_URL, { method:'POST', body: JSON.stringify(rec) });
         const recs = load(KEY_RECORDS,[]);
         const idx  = recs.findIndex(r=>r.id===rec.id);
         if (idx>=0) { recs[idx].synced=true; save(KEY_RECORDS,recs); }
       } catch(e) { console.warn('GAS sync failed:',e); }
     }
     async function syncAll() {
-      const url  = GAS_URL;
       const recs = load(KEY_RECORDS,[]).filter(r=>!r.synced && r.status !== 'open');
       if (!recs.length) { showToast('未同期のデータはありません'); return; }
       showToast(`📤 ${recs.length}件を送信中…`);
       let ok=0;
-      for (const rec of recs) { try { await fetch(url,{method:'POST',body:JSON.stringify(rec)}); ok++; } catch {} }
+      for (const rec of recs) { try { await fetch(GAS_URL,{method:'POST',body:JSON.stringify(rec)}); ok++; } catch {} }
       const all = load(KEY_RECORDS,[]);
       const ids = new Set(recs.map(r=>r.id));
       all.forEach(r=>{ if(ids.has(r.id)) r.synced=true; });
@@ -1184,7 +1117,6 @@
       isMaster = false;
       save(KEY_MASTER, false);
       closeOverlay('settingsOverlay');
-      // マスター専用タブが選択中なら入力に戻る
       const activeNav = document.querySelector('.nav-btn.active');
       if (activeNav && activeNav.classList.contains('master-only')) {
         showPage('input', document.querySelector('.nav-btn:first-child'));
@@ -1211,19 +1143,6 @@
       clearTimeout(toastTimer);
       toastTimer=setTimeout(()=>el.classList.remove('show'),2800);
     }
-
-    // ── ODO LOAD on summary page init ──
-    // Patch showPage to load ODO inputs when navigating to summary
-    const origShowPage = window.showPage;
-    document.querySelectorAll('.nav-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        setTimeout(() => {
-          if (document.getElementById('page-summary').classList.contains('active')) {
-            loadOdoInputs();
-          }
-        }, 0);
-      });
-    });
 
     // ── SERVICE WORKER ──
     if ('serviceWorker' in navigator) {
