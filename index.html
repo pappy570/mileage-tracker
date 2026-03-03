@@ -670,14 +670,16 @@
     let sStaffFilter = 'all';
     let isMaster = load(KEY_MASTER, false);
     let listData = [];
-    let hGasData = []; // 履歴タブのGASデータキャッシュ
+    let hGasData    = []; // 履歴タブのGASデータキャッシュ
+    let hDisplayData = []; // 履歴タブの表示データ（GAS＋localOpen マージ済み）
+    let sGasData    = []; // 集計タブのGASデータキャッシュ
 
     document.addEventListener('DOMContentLoaded', () => {
       applyMode();
       document.getElementById('inputDate').value = toDateVal(new Date());
       refreshStaffSelect();
       renderOpenRecords();
-      fetchHistoryFromGas(); renderSummary(); renderList();
+      fetchHistoryFromGas(); fetchSummaryFromGas(); renderList();
       // GASからスタッフ名・記録を自動読み込み
       loadStaffFromGas();
     });
@@ -864,7 +866,7 @@
       document.getElementById('pageTitle').textContent = t;
       document.getElementById('pageSub').textContent   = s;
       if (name === 'history') fetchHistoryFromGas();
-      if (name === 'summary') renderSummary();
+      if (name === 'summary') { fetchSummaryFromGas(); loadOdoInputs(); }
       if (name === 'list')    renderList();
     }
 
@@ -872,7 +874,7 @@
       const cur = months[p];
       months[p] = new Date(cur.getFullYear(), cur.getMonth()+d, 1);
       if (p==='h') fetchHistoryFromGas();
-      if (p==='s') { renderSummary(); loadOdoInputs(); }
+      if (p==='s') { fetchSummaryFromGas(); loadOdoInputs(); }
       if (p==='l') renderList();
     }
 
@@ -908,6 +910,7 @@
       const localOpen = load(KEY_RECORDS,[]).filter(r => r.status === 'open' && r.date.startsWith(key));
       const merged = [...hGasData];
       localOpen.forEach(r => { if (!merged.find(g => g.id === r.id)) merged.push(r); });
+      hDisplayData = merged; // showDetail() 用に全マージデータを保持
       const recs = merged
         .filter(r => r.date.startsWith(key))
         .filter(r => hStaffFilter==='all' || r.staff===hStaffFilter)
@@ -919,7 +922,7 @@
         return;
       }
       el.innerHTML = '<div class="card">' + recs.map(r => `
-        <div class="rec-item" onclick="showDetail('${r.id}')">
+        <div class="rec-item" onclick="showDetail('${r.id}','history')">
           <div class="rec-info">
             <div class="rec-staff">${esc(r.staff)}</div>
             <div class="rec-date">${dispDate(r.date)}</div>
@@ -931,6 +934,16 @@
 
     // ── SUMMARY ──
     function setSStaff(val) { sStaffFilter = val; renderSummary(); }
+
+    async function fetchSummaryFromGas() {
+      const key = ym(months.s);
+      try {
+        const res  = await fetch(`${GAS_URL}?action=get&ym=${key}`);
+        const data = await res.json();
+        if (data.ok) sGasData = data.records;
+      } catch(e) { /* オフライン時はそのまま */ }
+      renderSummary();
+    }
 
     function loadOdoInputs() {
       const key  = ym(months.s);
@@ -970,8 +983,7 @@
       const odoStart = parseFloat(document.getElementById('odoStart')?.value || odoVal.start || '');
       const odoEnd   = parseFloat(document.getElementById('odoEnd')?.value   || odoVal.end   || '');
 
-      const recs   = load(KEY_RECORDS,[])
-        .filter(r => r.status !== 'open')
+      const recs   = sGasData
         .filter(r => r.date.startsWith(key))
         .filter(r => sStaffFilter==='all' || r.staff===sStaffFilter);
       const bizKm  = parseFloat(recs.reduce((s,r) => s+r.distance, 0).toFixed(1));
@@ -1039,7 +1051,7 @@
 
     // ── DETAIL ──
     function showDetail(id, source) {
-      const recs = source==='list' ? listData : load(KEY_RECORDS,[]);
+      const recs = source==='list' ? listData : source==='history' ? hDisplayData : load(KEY_RECORDS,[]);
       const r    = recs.find(r => r.id===id);
       if (!r) return;
       document.getElementById('detailTitle').textContent = r.memo || r.staff;
@@ -1059,7 +1071,7 @@
       save(KEY_RECORDS, load(KEY_RECORDS,[]).filter(r=>r.id!==id));
       closeOverlay('detailOverlay');
       showToast('記録を削除しました');
-      fetchHistoryFromGas(); renderSummary(); renderList();
+      fetchHistoryFromGas(); fetchSummaryFromGas(); renderList();
     }
 
     // ── CSV ──
