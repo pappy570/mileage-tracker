@@ -1091,9 +1091,29 @@
       try {
         const res  = await fetch(`${GAS_URL}?action=get&ym=${key}`);
         const data = await res.json();
-        if (data.ok) sfGasData = data.records;
+        if (data.ok) {
+          sfGasData = data.records;
+          autoFillSfOdo(key);
+        }
       } catch(e) {}
       renderStaffSummary();
+    }
+
+    // GASデータから月初・月末ODOを自動セット
+    function autoFillSfOdo(key) {
+      const recs = sfGasData.filter(r => r.date.startsWith(key) && r.arrivalOdo > 0);
+      if (!recs.length) return;
+      // 一番古い日付の出発ODO
+      const asc  = [...recs].sort((a, b) => a.date.localeCompare(b.date) || a.departureOdo - b.departureOdo);
+      const startOdo = asc[0].departureOdo;
+      // 一番新しい日付の到着ODO
+      const desc = [...recs].sort((a, b) => b.date.localeCompare(a.date) || b.arrivalOdo - a.arrivalOdo);
+      const endOdo = desc[0].arrivalOdo;
+      document.getElementById('sfOdoStart').value = startOdo;
+      document.getElementById('sfOdoEnd').value   = endOdo;
+      const odos = load(KEY_ODO, {});
+      odos[key]  = { start: startOdo, end: endOdo };
+      save(KEY_ODO, odos);
     }
 
     function loadSfOdoInputs() {
